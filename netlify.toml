@@ -1,0 +1,13 @@
+[build]
+  publish = "client/dist"
+
+[dev]
+  # Launch Uvicorn for your new FastAPI location:
+  command   = "poetry run uvicorn backend.server.netlify.functions.api:app --reload --port 8088"
+  port      = 3000          # Netlify Dev’s “site” port
+  targetPort= 8088        # where your API will actually listen
+
+[[redirects]]
+  from   = "/api/*"
+  to     = "http://localhost:8088/:splat"
+  status = 200
