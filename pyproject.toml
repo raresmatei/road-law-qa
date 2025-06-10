@@ -39,8 +39,6 @@ hypercorn = "^0.17.3"
 scrape-legislation = "scrape_api.cli:main"
 ingest             = "scrape_api.ingest:main"
 
-[tool.poetry.group.dev.dependencies]
-alembic = "^1.16.1"
 
 [build-system]
 requires = ["poetry-core"]

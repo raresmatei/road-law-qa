@@ -2,8 +2,8 @@ import json
 import os
 import click
 from urllib.parse import urlparse, unquote, quote_plus
-from python_be.crawler import crawl
-from python_be.html_parser import parse_html, chunk_text
+from .crawler import crawl
+from .html_parser import parse_html, chunk_text
 from uuid import uuid4
 from uvicorn import run
 
