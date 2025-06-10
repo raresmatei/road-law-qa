@@ -1,0 +1,9 @@
+/* src/pages/Dashboard/Dashboard.module.css */
+.container {
+  padding: 2rem;
+}
+button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}

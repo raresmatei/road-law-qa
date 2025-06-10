@@ -3,8 +3,9 @@
 import jwt
 from fastapi import HTTPException, status
 from passlib.context import CryptContext
-import psycopg2
+from sqlalchemy.orm import Session
 
+from ..models.models import User
 from ..schemas.schemas import LoginRequest, LoginResponse
 from ...utils.settings import settings
 
@@ -12,34 +13,22 @@ pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def login_handler(
     req: LoginRequest,
-    conn: psycopg2.extensions.connection
+    db: Session,  # now a SQLAlchemy Session
 ) -> LoginResponse:
-    # 1) open a cursor and look up the user by username
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT id, hashed_password
-          FROM users
-         WHERE username = %s
-        """,
-        (req.username,)
-    )
-    row = cur.fetchone()
-    cur.close()
+    # 1) look up the user by username via SQLAlchemy
+    user = db.query(User).filter(User.username == req.username).first()
 
     # 2) verify we found a user and the password matches
-    if not row or not pwd_ctx.verify(req.password, row[1]):
+    if not user or not pwd_ctx.verify(req.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_id = row[0]
-
     # 3) issue JWT
     token = jwt.encode(
-        {"sub": str(user_id)},
+        {"sub": str(user.id)},
         settings.JWT_SECRET,
         algorithm="HS256",
     )

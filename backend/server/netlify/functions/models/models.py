@@ -22,6 +22,7 @@ class Conversation(Base):
     id        = Column(Integer, primary_key=True, index=True)
     user_id   = Column(Integer, index=True)            # from your auth system
     created_at= Column(DateTime, default=datetime.utcnow)
+    summary    = Column(Text, nullable=True, default="")
 
     messages  = relationship("Message", back_populates="conversation", cascade="all, delete")
 

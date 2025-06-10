@@ -48,3 +48,17 @@ class QueryResponse(BaseModel):
     
 class AnswerResponse(BaseModel):
     answer: str
+
+class MessageItem(BaseModel):
+    role: str
+    content: str
+    created_at: Optional[datetime]
+
+class ConversationSummary(BaseModel):
+    conversation_id: int
+    created_at: datetime
+    summary: Optional[str] = None
+
+class ConversationHistory(BaseModel):
+    conversation_id: int
+    messages: List[MessageItem]

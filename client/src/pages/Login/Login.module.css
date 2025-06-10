@@ -1,0 +1,25 @@
+/* src/pages/Login/Login.module.css */
+.container {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+}
+.form label {
+  margin-bottom: 0.75rem;
+}
+.form input {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+}
+button {
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+  cursor: pointer;
+}
