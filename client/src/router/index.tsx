@@ -9,6 +9,7 @@ import Login from "../pages/Login/Login";
 import NotFound from "../pages/NotFound/NotFound";
 
 import { AuthContext } from "../store/AuthContext";
+import Ingest from "../pages/Ingest/Ingest";
 
 function ProtectedRoute() {
   const { user } = useContext(AuthContext);
@@ -30,6 +31,7 @@ export default function AppRouter() {
         {/* Protected */}
         <Route element={<ProtectedRoute />}>
           <Route path="/home" element={<Home />} />
+          <Route path="/admin" element={<Ingest/>} />
         </Route>
 
         {/* 404 */}

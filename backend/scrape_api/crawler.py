@@ -3,7 +3,7 @@
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
-from python_be.pdf_extractor import extract_text as extract_pdf_text
+from .pdf_extractor import extract_text as extract_pdf_text
 
 # Keep track of visited URLs to avoid infinite loops
 visited = set()

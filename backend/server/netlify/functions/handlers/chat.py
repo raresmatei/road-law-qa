@@ -28,6 +28,7 @@ client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 def is_road_legislation_question(text: str) -> bool:
+    print('in fct is_road_legislation_question....')
     """
     Ask a lightweight OpenAI classifier whether `text` is about road legislation.
     Returns True if the LLM says “LEGISLATION”, False if “CHAT”.
@@ -172,6 +173,7 @@ async def chat_handler(
 
     # 5) Classify and generate assistant reply
     if is_road_legislation_question(rewritten_query):
+        print('road-legislation-question......')
         qr = QueryRequest(query=rewritten_query)
         query_resp: QueryResponse = await query_handler(qr)
         answer_resp: AnswerResponse = await answer_handler(query_resp)

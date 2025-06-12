@@ -19,6 +19,7 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    is_admin: bool
     
 class MessageItem(BaseModel):
     role: str
@@ -45,6 +46,9 @@ class Match(BaseModel):
 class QueryResponse(BaseModel):
     matches: list[Match]
     prompt: str
+    
+class IngestRequest(BaseModel):
+    url: str
     
 class AnswerResponse(BaseModel):
     answer: str

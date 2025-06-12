@@ -1,70 +1,57 @@
-from openai import OpenAI
+# backend/server/netlify/functions/handlers/answer.py
 
+from openai import OpenAI
+from fastapi import HTTPException
 from backend.server.netlify.functions.schemas.schemas import AnswerResponse, QueryResponse
-from ...utils.settings import settings
-import json
-import os
+from backend.server.netlify.utils.settings import settings
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 async def answer_handler(qr: QueryResponse) -> AnswerResponse:
     if not qr.matches:
-        return {"answer": "Nu am găsit pasaje relevante."}
+        return AnswerResponse(answer="Nu am găsit pasaje relevante.")
 
-    # Build snippet list
     snippets = []
     for m in qr.matches:
+        # Extract directly from metadata
         url = m.metadata.get("url", "")
-        idx = m.metadata.get("chunk_index")
-        name = m.metadata.get("name")
-        snippet_text = f"(vezi {url} chunk {idx})"
-        
-        try:
-            with open(f"./backend/scrape_api/output/{name}.json", encoding="utf-8") as f:
-                chunks = json.load(f)
-            for c in chunks:
-                if c.get("chunk_index") == idx:
-                    print('idx: ', idx)
-                    snippet_text = c.get("text", snippet_text)
-                    print('snippet_text: ', snippet_text)
-                    break
-        except FileNotFoundError:
-            print('file not found')
-            pass
+        idx = m.metadata.get("chunk_index", None)
+        text = m.metadata.get("text", "")
 
-        # truncate
-        # print('snipet text: ', snippet_text)
-        s = snippet_text.replace("\n", " ").strip()
-        # if len(s) > 200:
-        #     s = s[:200].rstrip() + "…"
-        snippets.append(f"* (score {m.score:.3f}) “{s}” — {url}")
-                
-    # compose messages
-    system = {
+        # Clean up and truncate if desired
+        snippet_text = text.replace("\n", " ").strip()
+        # e.g. snippet_text = (snippet_text[:200] + "…") if len(snippet_text) > 200 else snippet_text
+
+        snippets.append(f"* (score {m.score:.3f}) “{snippet_text}” — {url}")
+
+    # System/user messages for the LLM
+    system_msg = {
         "role": "system",
         "content": (
-            "as an intelligentint assistant," 
-            "answer only using the received information in the previous message" 
-            "answer in romanian and synthetise the retrieved informatoion, give explanations if needed" 
-            "if question is starightforward, answer simply to it, without giving too many options to confuse the user"
-            "for example if the user asks a general question like what is the speed limt, offer more options depinding on type of road and so on"
+            "You are an intelligent assistant specialized in Romanian road legislation. "
+            "Use ONLY the provided snippets to answer the question, synthesize the information, "
+            "and respond in Romanian. If the user’s question is straightforward, answer simply."
         )
     }
-    user = {
+    user_msg = {
         "role": "user",
         "content": (
-            f"Here's the user query: ${qr.prompt} and the retrieved information from RAG:\n"
-            + "\n".join(snippets)
-            # + "\n\nTe rog dă-mi o sinteză a ceea ce spun aceste legi pe subiect, iar daca intrebarea este una simpla de exemple limite de viteza/tonaj raspnude simplu si al obiect"
-        ),
+            f"Query: {qr.prompt}\n\n"
+            "Here are the retrieved snippets:\n" +
+            "\n".join(snippets) +
+            "\n\nPlease provide a concise, Romanian-language answer based solely on these."
+        )
     }
 
-    # call the new client
-    resp = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[user, system],
-        temperature=0.2,
-        max_tokens=600
-    )
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[system_msg, user_msg],
+            temperature=0.2,
+            max_tokens=600
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OpenAI error: {e}")
 
-    return AnswerResponse(answer =  resp.choices[0].message.content)
+    answer = resp.choices[0].message.content.strip()
+    return AnswerResponse(answer=answer)

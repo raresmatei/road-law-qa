@@ -1,4 +1,3 @@
-// src/store/AuthContext.tsx
 import React, {
   createContext,
   useEffect,
@@ -7,7 +6,7 @@ import React, {
 } from 'react';
 import type { ReactNode } from 'react';
 import { loginService } from '../services/authService';
-import type {LoginPayload} from '../services/authService';
+import type { LoginPayload, LoginResponse } from '../services/authService';
 
 interface User {
   username: string;
@@ -15,13 +14,15 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (credentials: LoginPayload) => Promise<void>;
+  isAdmin: boolean;
+  login: (credentials: LoginPayload) => Promise<boolean>;
   logout: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
-  login: async () => {},
+  isAdmin: false,
+  login: async () => false,
   logout: () => {},
 });
 
@@ -31,35 +32,42 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // On mount, restore from localStorage
+  // Restore from localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     const storedUsername = localStorage.getItem('user_username');
+    const storedIsAdmin = localStorage.getItem('is_admin');
     if (token && storedUsername) {
       setUser({ username: storedUsername });
+      setIsAdmin(storedIsAdmin === 'true');
     }
   }, []);
 
-  // login() now calls the real /login endpoint with { username, password }
   const login = useCallback(
     async ({ username, password }: LoginPayload) => {
-      const data = await loginService({ username, password });
+      const data: LoginResponse = await loginService({ username, password });
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('user_username', username);
+      localStorage.setItem('is_admin', data.is_admin.toString());
       setUser({ username });
+      setIsAdmin(data.is_admin);
+      return data.is_admin;
     },
     []
   );
 
   const logout = useCallback(() => {
     setUser(null);
+    setIsAdmin(false);
     localStorage.removeItem('access_token');
     localStorage.removeItem('user_username');
+    localStorage.removeItem('is_admin');
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,18 +1,18 @@
 from mangum import Mangum
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
+from backend.server.netlify.functions.handlers.admin_ingest import IngestResponse, ingest_legislation_admin
 from backend.server.netlify.functions.handlers.chat import chat_handler
-from backend.server.netlify.functions.handlers.conversation import get_conversation_handler, list_conversations_handler 
+from backend.server.netlify.functions.handlers.conversation import get_conversation_handler, list_conversations_handler
+from backend.server.netlify.functions.handlers.list_ingested_urls import UrlsResponse, list_ingested_urls_handler
 
-from .handlers.query   import query_handler
-from .handlers.answer  import answer_handler
 from .handlers.auth    import register_handler
 from .handlers.login   import login_handler
 from .db.db            import get_db
-from ..utils.auth import get_current_user
-from .schemas.schemas import ChatRequest, ChatResponse, ConversationHistory, ConversationSummary, QueryRequest, QueryResponse, AnswerResponse, RegisterRequest, RegisterResponse, LoginRequest, LoginResponse
+from ..utils.auth import get_current_admin_user, get_current_user
+from .schemas.schemas import ChatRequest, ChatResponse, ConversationHistory, ConversationSummary, IngestRequest, QueryRequest, QueryResponse, AnswerResponse, RegisterRequest, RegisterResponse, LoginRequest, LoginResponse
 
 app = FastAPI(title="Road Legislation QA")
 
@@ -29,32 +29,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 @app.post(
-    "/query",
-    response_model=QueryResponse,
-    summary="Semantic query (protected)",
+    "/admin/ingest_legislation",
+    response_model=IngestResponse,
+    summary="[ADMIN] Scrape & ingest legislation from a URL",
 )
-async def query_request(
-    query: QueryRequest,
-    user_id: str = Depends(get_current_user),
+async def ingest_legislation(
+    req: IngestRequest,
+    user_id: str = Depends(get_current_admin_user),
 ):
-    """
-    Only logged-in users (valid JWT Bearer token) can reach this.
-    `user_id` is available if you ever need it inside your handler.
-    """
-    return await query_handler(query)
+    return await ingest_legislation_admin(req, user_id)
 
-@app.post(
-    "/answer",
-    response_model=AnswerResponse,
-    summary="Generate chat-style answer (protected)",
+@app.get(
+    "/admin/ingested_urls",
+    response_model=UrlsResponse,
+    summary="[ADMIN] List already-ingested legislation URLs",
 )
-async def answer_from_matches(
-    qr: QueryResponse,
-    user_id: str = Depends(get_current_user),
+async def ingested_urls(
+    user_id: str = Depends(get_current_admin_user),
 ):
-    return await answer_handler(qr)
+    return list_ingested_urls_handler(user_id)
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(

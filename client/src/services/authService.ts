@@ -27,6 +27,7 @@ export interface LoginPayload {
 export interface LoginResponse {
   access_token: string;
   token_type: string; // typically "bearer"
+  is_admin: boolean
 }
 
 //

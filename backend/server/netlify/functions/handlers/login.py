@@ -13,12 +13,12 @@ pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def login_handler(
     req: LoginRequest,
-    db: Session,  # now a SQLAlchemy Session
+    db: Session,
 ) -> LoginResponse:
-    # 1) look up the user by username via SQLAlchemy
+    # 1) look up the user by username
     user = db.query(User).filter(User.username == req.username).first()
 
-    # 2) verify we found a user and the password matches
+    # 2) verify user exists and password matches
     if not user or not pwd_ctx.verify(req.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -26,11 +26,24 @@ def login_handler(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 3) issue JWT
-    token = jwt.encode(
-        {"sub": str(user.id)},
-        settings.JWT_SECRET,
-        algorithm="HS256",
-    )
+    # 3) check admin credentials
+    #    we compare the incoming creds against your configured admin
+    is_admin = False
+    if req.username == settings.ADMIN_USERNAME:
+        # only verify password against the ADMIN_PASSWORD_HASH
+        if pwd_ctx.verify(req.password, settings.ADMIN_PASSWORD_HASH):
+            is_admin = True
 
-    return LoginResponse(access_token=token, token_type="bearer")
+    # 4) issue JWT with an extra "admin" claim
+    payload = {
+        "sub": str(user.id),
+        "admin": is_admin,
+    }
+    token = jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
+
+    # 5) return token + flag
+    return LoginResponse(
+        access_token=token,
+        token_type="bearer",
+        is_admin=is_admin,
+    )

@@ -13,7 +13,7 @@ from pinecone import Pinecone, ServerlessSpec
 @click.option('--model_name', default='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
 @click.option('--pinecone_api_key', envvar='PINECONE_API_KEY', required=True, help='Pinecone API key')
 @click.option('--pinecone_env',    envvar='PINECONE_ENV',    required=True, help='Pinecone environment/region')
-@click.option('--pinecone_index', default='road-legislation', help='Pinecone index name')
+@click.option('--pinecone_index', default='road-legislation-index', help='Pinecone index name')
 def main(dir, model_name, pinecone_api_key, pinecone_env, pinecone_index):
     """Embed JSON text chunks under DIR and upsert to Pinecone."""
     # Instantiate Pinecone client
@@ -68,7 +68,8 @@ def main(dir, model_name, pinecone_api_key, pinecone_env, pinecone_index):
             metadata.append({
                 'url':         item.get('url'),
                 'name':        item.get('name'),
-                'chunk_index': item.get('chunk_index')
+                'chunk_index': item.get('chunk_index'),
+                'text': item.get('text')
             })
 
         click.echo(f"✅ Loaded {len(data)} items from {fname}")
@@ -77,7 +78,7 @@ def main(dir, model_name, pinecone_api_key, pinecone_env, pinecone_index):
     embeddings = model.encode(texts, show_progress_bar=True)
 
     # Upsert in batches
-    batch_size = 1000
+    batch_size = 100
     for i in range(0, len(embeddings), batch_size):
         batch_emb = embeddings[i:i+batch_size]
         batch_meta = metadata[i:i+batch_size]

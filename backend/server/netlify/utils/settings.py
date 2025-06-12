@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     DB_PORT: str
     DB_NAME: str
     DATABASE_URL: str
+    ADMIN_USERNAME: str
+    ADMIN_PASSWORD_HASH: str  # bcrypt‐hash of the admin’s password
 
     class Config:
         env_file = ".env"
